@@ -8,11 +8,12 @@ using System.Data;
 using System.Data.SqlClient;
 using Microsoft.AspNetCore.Http;
 using StudentExercisesAPI.Models;
+using Microsoft.AspNetCore.Mvc.Razor;
 
 namespace StudentExercisesAPI.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class ExerciseController : ControllerBase
     {
         private readonly IConfiguration _config;
@@ -31,27 +32,58 @@ namespace StudentExercisesAPI.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Get()
+        public async Task<IActionResult> Get(string include, string name, string language)
         {
             using (SqlConnection conn = Connection)
             {
                 conn.Open();
                 using (SqlCommand cmd = conn.CreateCommand())
                 {
-                    cmd.CommandText = "SELECT Id, Name, Language FROM Exercise";
+                    
+
+                    string query = "SELECT e.Id, e.Name, e.Language, s.FirstName, s.LastName, s.Id AS 'Student Id' FROM Exercise e JOIN ExerciseStudent ON E.Id = ExerciseStudent.Id JOIN Student s ON s.Id = ExerciseStudent.StudentId ";
+
+                    if(name != null)
+                    {
+                        query += $"WHERE name = '{name}'";
+                    }
+                    else if (language != null)
+                    {
+                        query += $"WHERE language = '{language}'";
+                    }
+
+                    cmd.CommandText = query;
                     SqlDataReader reader = cmd.ExecuteReader();
                     List<Exercise> exercises = new List<Exercise>();
 
+                    int lastExerciseId = -1;
+
                     while (reader.Read())
                     {
-                        Exercise exercise = new Exercise
-                        {
-                            Id = reader.GetInt32(reader.GetOrdinal("Id")),
-                            Name = reader.GetString(reader.GetOrdinal("Name")),
-                            Language = reader.GetString(reader.GetOrdinal("Language"))
-                        };
+                        if (lastExerciseId != reader.GetInt32(reader.GetOrdinal("Id"))) 
+                            {
+                            Exercise exercise = new Exercise
+                            {
+                                Id = reader.GetInt32(reader.GetOrdinal("Id")),
+                                Name = reader.GetString(reader.GetOrdinal("Name")),
+                                Language = reader.GetString(reader.GetOrdinal("Language"))
+                            };
 
-                        exercises.Add(exercise);
+                            exercises.Add(exercise);
+
+                        }
+
+                        lastExerciseId = exercises.Last().Id;
+
+                        if(include == "student" && !exercises.Last().assignedStudnets.Any(student => student.Id == reader.GetInt32(reader.GetOrdinal("Student Id"))))
+                        {
+                            Student student = new Student
+                            {
+                                FirstName = reader.GetString(reader.GetOrdinal("FirstName")),
+                                LastName = reader.GetString(reader.GetOrdinal("LastName"))
+                            };
+                            exercises.Last().assignedStudnets.Add(student);
+                        }
                     }
                     reader.Close();
 
