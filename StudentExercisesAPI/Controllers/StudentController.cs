@@ -42,7 +42,7 @@ namespace StudentExercisesAPI.Controllers
 
 
                    
-                       string query = "SELECT Student.Id, Student.FirstName, Student.LastName, Student.SlackHandle, Student.CohortId, Cohort.Name as 'Cohort Name', Exercise.Name as 'Exercise Name' FROM Student JOIN Cohort on Student.CohortId = Cohort.Id JOIN ExerciseStudent on Student.Id = ExerciseStudent.StudentId JOIN Exercise on Exercise.Id = ExerciseStudent.ExerciseId ";
+                       string query = "SELECT Student.Id, Student.FirstName, Student.LastName, Student.SlackHandle, Student.CohortId, Cohort.Name as 'Cohort Name', Exercise.Name as 'Exercise Name', Exercise.Language as 'Exercise Language' FROM Student JOIN Cohort on Student.CohortId = Cohort.Id JOIN ExerciseStudent on Student.Id = ExerciseStudent.StudentId JOIN Exercise on Exercise.Id = ExerciseStudent.ExerciseId ";
 
 
                     if (firstName != null)
@@ -98,7 +98,8 @@ namespace StudentExercisesAPI.Controllers
                         {
                             Exercise exercise = new Exercise
                             {
-                                Name = reader.GetString(reader.GetOrdinal("Exercise Name"))
+                                Name = reader.GetString(reader.GetOrdinal("Exercise Name")),
+                                Language = reader.GetString(reader.GetOrdinal("Exercise Language"))
                             };
                             students.Last().AssignedExercises.Add(exercise);
                         }
